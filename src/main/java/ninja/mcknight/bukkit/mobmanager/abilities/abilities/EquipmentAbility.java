@@ -50,18 +50,18 @@ import ninja.mcknight.bukkit.mobmanager.common.util.MiscUtil;
 public class EquipmentAbility extends Ability
 {
 	public static final Pattern valuePattern = Pattern.compile("^(DIAMOND|IRON|CHAIN|GOLD|LEATHER|NONE|DEFAULT)$", Pattern.CASE_INSENSITIVE);
-	
+
 	public enum ArmourPosition
 	{
 		HELMET(0), CHESTPLATE(1), LEGGINGS(2), BOOTS(3), HAND(4);
-		
+
 		public final byte p;
-		
+
 		ArmourPosition(int p)
 		{
 			this.p = (byte) p;
 		}
-		
+
 	}
 	public enum ArmourMaterial
 	{
@@ -72,9 +72,9 @@ public class EquipmentAbility extends Ability
 		LEATHER(Material.LEATHER_HELMET, Material.LEATHER_CHESTPLATE, Material.LEATHER_LEGGINGS, Material.LEATHER_BOOTS, Material.WOOD_SWORD),
 		NONE(Material.AIR, Material.AIR, Material.AIR, Material.AIR, Material.AIR),
 		DEFAULT(null, null, null, null, null);
-		
-		private final Material[] materials = new Material[5]; 
-		
+
+		private final Material[] materials = new Material[5];
+
 		ArmourMaterial(Material head, Material chest, Material legs, Material feet, Material hand)
 		{
 			materials[ArmourPosition.HELMET.p] = head;
@@ -83,37 +83,37 @@ public class EquipmentAbility extends Ability
 			materials[ArmourPosition.BOOTS.p] = feet;
 			materials[ArmourPosition.HAND.p] = hand;
 		}
-		
+
 		public Material getMaterial(ArmourPosition position)
 		{
 			return materials[position.p];
 		}
 	}
-	
+
 	public static class Armour
 	{
 		public final ArmourPosition position;
 		public final float dropChance;
 		private final ItemParser itemTemplate;
-		
+
 		public Armour(ArmourPosition position, ItemParser item, float dropChance)
 		{
 			this.position = position;
 			this.dropChance = dropChance < 0.0F ? 0.15F : dropChance;
-			
+
 			this.itemTemplate = item;
 		}
-		
+
 		public void addArmour(LivingEntity entity)
 		{
 			// If no template exists we do nothing
 			if (itemTemplate == null)
 				return;
-			
+
 			// Create a copy of the item template
 			ItemStack item = itemTemplate.getItem();
 			EntityEquipment equipment = entity.getEquipment();
-			
+
 			switch (position)
 			{
 			case BOOTS:
@@ -131,17 +131,17 @@ public class EquipmentAbility extends Ability
 			case LEGGINGS:
 				equipment.setLeggings(item);
 				equipment.setLeggingsDropChance(dropChance);
-				break;	
+				break;
 			case HAND:
-				equipment.setItemInHand(item);
-				equipment.setItemInHandDropChance(dropChance);
+				equipment.setItemInMainHand(item);
+				equipment.setItemInMainHandDropChance(dropChance);
 				break;
 			}
 		}
 	}
-	
+
 	private final ArrayList<Armour> armour;
-	
+
 	private EquipmentAbility(ArrayList<Armour> armour)
 	{
 		this.armour = armour;
@@ -152,13 +152,13 @@ public class EquipmentAbility extends Ability
 	{
 		if (entity == null || entity instanceof Player || armour == null)
 			return;
-		
+
 		for (Armour a : armour)
 		{
 			a.addArmour(entity);
 		}
 	}
-	
+
 	@Override
 	public AbilityType getAbilityType()
 	{
@@ -168,63 +168,63 @@ public class EquipmentAbility extends Ability
 	public static void setup(ExtendedEntityType mob, ValueChance<Ability> abilityChances, List<?> optList)
 	{
 		Iterator<?> it = optList.iterator();
-		
+
 		while (it.hasNext())
 		{
 			Map<String, Object> optMap = MiscUtil.getConfigMap(it.next());
-			
+
 			if (optMap == null)
 				continue;
-			
+
 			int chance = MiscUtil.getInteger(optMap.get("CHANCE"));
-			
+
 			if (chance <= 0)
 				continue;
-				
+
 			EquipmentAbility ability = setup(mob, MiscUtil.getList(optMap.get("PIECES")));
-			
+
 			if (ability != null)
 				abilityChances.addChance(chance, ability);
 		}
 	}
-	
+
 	public static EquipmentAbility setup(ExtendedEntityType mob, List<Object> optList)
 	{
 		ArrayList<Armour> armourList = null;
-		
+
 		if (optList != null)
 		{
 			for (Object obj : optList)
 			{
 				Armour armour = getArmour(MiscUtil.getConfigMap(obj));
-				
+
 				if (armour != null)
 				{
 					if (armourList == null)
 						armourList = new ArrayList<Armour>(1);
-					
+
 					armourList.add(armour);
 				}
 			}
 		}
-		
+
 		return new EquipmentAbility(armourList);
 	}
-	
+
 	public static Armour getArmour(Map<String, Object> optMap)
 	{
 		// Check for valid option map
 		if (optMap == null)
 			return null;
-		
+
 		String tmpStr = MiscUtil.getString(optMap.get("POSITION"));
-		
+
 		if (tmpStr == null)
 		{
 			MMComponent.getAbilities().warning("Missing equipment position in abilities.yml");
 			return null;
 		}
-		
+
 		ArmourPosition position = null;
 		// Find the armour position
 		for (ArmourPosition pos : ArmourPosition.values())
@@ -235,20 +235,20 @@ public class EquipmentAbility extends Ability
 				break;
 			}
 		}
-		
+
 		if (position == null)
 		{
 			MMComponent.getAbilities().info("Invalid equipment position given: " + tmpStr);
 			return null;
 		}
-		
+
 		// Fetch the Item
 		ItemParser item = null;
 		// If the custom item does not exist we check for a material type
 		if (optMap.containsKey("CUSTOMITEM"))
 		{
 			Map<String, Object> itemMap = MiscUtil.getConfigMap(optMap.get("CUSTOMITEM"), false);
-			
+
 			if (itemMap != null)
 			{
 				try
@@ -269,7 +269,7 @@ public class EquipmentAbility extends Ability
 		if (item == null)
 		{
 			tmpStr = MiscUtil.getString(optMap.get("MATERIAL"));
-			
+
 			if (tmpStr == null || !valuePattern.matcher(tmpStr).matches())
 			{
 				if (tmpStr != null)
@@ -278,25 +278,25 @@ public class EquipmentAbility extends Ability
 				}
 				return null;
 			}
-			
+
 			ArmourMaterial armourMaterial = ArmourMaterial.valueOf(tmpStr.toUpperCase());
-			
+
 			Material material = armourMaterial.getMaterial(position);
-			
+
 			item = material != null ? new ItemParser(new ItemStack(material)) : null;
 		}
-		
+
 		float dropChance = MiscUtil.getFloat(optMap.get("DROPCHANCE"), 0.15F);
-		
+
 		return new Armour(position, item, dropChance);
 	}
-	
+
 	public static EquipmentAbility setup(ExtendedEntityType mob, Object opt)
 	{
 		List<Object> optList = MiscUtil.getList(opt);
 		if (optList != null)
 			return setup(mob, optList);
-		
+
 		MMComponent.getAbilities().warning(String.format("Found an error in abilities config for %s-Equipmentset. The value must be a list of equipment peices", mob.toString()));
 		return null;
 	}

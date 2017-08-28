@@ -31,7 +31,7 @@ package ninja.mcknight.bukkit.mobmanager.commands;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import ninja.mcknight.bukkit.mobmanager.limiter.config.LimiterConfig;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.LivingEntity;
@@ -39,6 +39,7 @@ import org.bukkit.entity.Player;
 
 import ninja.mcknight.bukkit.mobmanager.MMComponent;
 import ninja.mcknight.bukkit.mobmanager.common.util.ExtendedEntityType;
+import ninja.mcknight.bukkit.mobmanager.limiter.config.LimiterConfig;
 import ninja.mcknight.bukkit.mobmanager.limiter.util.MobType;
 import ninja.mcknight.bukkit.mobmanager.limiter.world.MMWorld;
 
@@ -59,25 +60,25 @@ public class MMCommandButcher extends MMCommand
 			sender.sendMessage(ChatColor.DARK_RED + "You do not have permission to use /mm butcher");
 			return;
 		}
-		
+
 		if (!MMComponent.getLimiter().isEnabled())
 		{
 			sender.sendMessage(ChatColor.RED + "This command requires EnableLimiter in main config to be true");
 			return;
 		}
-		
+
 		if (!super.validArgs(sender, maincmd, args))
 			return;
-		
+
 		ArrayList<Object> toRemove = new ArrayList<Object>(1);
 		int numMobs = 0;
-		
+
 		if (args.length == 1)
 		{
 			toRemove.add(MobType.MONSTER);
 			toRemove.add(MobType.AMBIENT);
 			toRemove.add(MobType.WATER_ANIMAL);
-			
+
 			if (args[0].equalsIgnoreCase("butcherall"))
 				toRemove.add(MobType.ANIMAL);
 		}
@@ -92,38 +93,43 @@ public class MMCommandButcher extends MMCommand
 				}
 			}
 		}
-		
+
 		numMobs = removeMobs(toRemove, args[0].equalsIgnoreCase("butcherall"));
-		
+
 		sender.sendMessage(ChatColor.GRAY + "~Removed " + numMobs + " mobs");
 	}
-	
+
 	public int removeMobs(ArrayList<Object> mobTypes, boolean removeAll)
 	{
 		int numMobs = 0;
-		
+
 		for (MMWorld world : MMComponent.getLimiter().getWorlds())
 		{
 			for (LivingEntity entity : world.getWorld().getLivingEntities())
 			{
 				MobType mob = MobType.valueOf(entity);
 				ExtendedEntityType type = ExtendedEntityType.valueOf(entity);
-				
+
 				boolean flag = mobTypes.contains(mob) && (removeAll || !LimiterConfig.ignoredMobs.contains(ExtendedEntityType.valueOf(entity)));
-				
+
+                                // Don't despawn Citizen NPCs!
+                                boolean isCitizensNPC = entity.hasMetadata("NPC");
+                                if (isCitizensNPC == true)
+                                        continue;
+
 				if (flag || mobTypes.contains(type))
 				{
 					world.decrementMobCount(type, entity);
-					
+
 					entity.remove();
 					++numMobs;
 				}
 			}
 		}
-		
+
 		return numMobs;
 	}
-	
+
 	public boolean addMobType(ArrayList<Object> toRemove, String type)
 	{
 		if (type.equalsIgnoreCase("monster"))
@@ -149,13 +155,13 @@ public class MMCommandButcher extends MMCommand
 		else
 		{
 			ExtendedEntityType entityType = ExtendedEntityType.valueOf(type);
-			if (entityType == null)
+                        if (entityType == null||entityType == ExtendedEntityType.UNKNOWN)
 				return false;
 			toRemove.add(entityType);
 		}
 		return true;
 	}
-	
+
 	@Override
 	public String getUsage()
 	{
@@ -164,8 +170,8 @@ public class MMCommandButcher extends MMCommand
 
 	@Override
 	public String getDescription()
-	{
-		return "Despawns entities from each world managed by MobManager";
+        {
+		return "Despawns entities from each world managed by MobManager. [MobTypes] can be monster, animal, waternaimal, ambient, villager or any entity type returned by /mm mobtypes.";
 	}
 
 	@Override

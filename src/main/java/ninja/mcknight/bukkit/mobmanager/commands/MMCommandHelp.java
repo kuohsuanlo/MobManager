@@ -42,7 +42,7 @@ public class MMCommandHelp extends MMCommand
 	MMCommandHelp(List<MMCommand> commandList)
 	{
 		super(Pattern.compile("help|h|\\?", Pattern.CASE_INSENSITIVE), Pattern.compile("^[ ]{0}|\\d{1,2}$"), 0, 1);
-		
+
 		this.commandList = commandList;
 	}
 
@@ -66,35 +66,35 @@ public class MMCommandHelp extends MMCommand
 				return;
 			}
 		}
-		
+
 		if (!super.validArgs(sender, maincmd, args))
 			return;
-		
+
 		ArrayList<String> messages = new ArrayList<String>();
-		
-		final int commandsPerPage = 4;
+
+		final int commandsPerPage = 6;
 		int page = args.length == 2 ? Integer.valueOf(args[1]) - 1 : 0;
-		
+
 		while(page * commandsPerPage > commandList.size())
 			--page;
-		
+
 		int count = page * commandsPerPage;
-		
+
 		messages.add(ChatColor.GOLD + "------------.:"
 				+ ChatColor.DARK_GREEN + "MobManager Help Page "
 				+ (page + 1) + "/" + (commandList.size() / commandsPerPage + (commandList.size() % commandsPerPage > 0 ? 1 : 0))
 				+ ChatColor.GOLD + ":.------------");
-		
+
 		for (;count < (page + 1) * commandsPerPage && count < commandList.size(); ++count)
 		{
 			MMCommand command = commandList.get(count);
-			
+
 			messages.add(String.format(command.getUsage() + ChatColor.YELLOW + " " + command.getDescription(),
 					ChatColor.AQUA, maincmd, command.getAliases(), ChatColor.DARK_AQUA));
 		}
-		
+
 		String[] messageArray = messages.toArray(new String[0]);
-		
+
 		sender.sendMessage(messageArray);
 	}
 

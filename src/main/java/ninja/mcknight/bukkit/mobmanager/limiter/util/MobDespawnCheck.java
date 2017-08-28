@@ -28,8 +28,7 @@
 
 package ninja.mcknight.bukkit.mobmanager.limiter.util;
 
-import ninja.mcknight.bukkit.mobmanager.common.util.PlayerFinder;
-import ninja.mcknight.bukkit.mobmanager.limiter.config.LimiterConfig;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -39,6 +38,8 @@ import org.bukkit.inventory.EntityEquipment;
 import ninja.mcknight.bukkit.mobmanager.MMComponent;
 import ninja.mcknight.bukkit.mobmanager.P;
 import ninja.mcknight.bukkit.mobmanager.common.util.ExtendedEntityType;
+import ninja.mcknight.bukkit.mobmanager.common.util.PlayerFinder;
+import ninja.mcknight.bukkit.mobmanager.limiter.config.LimiterConfig;
 import ninja.mcknight.bukkit.mobmanager.limiter.world.MMWorld;
 
 public class MobDespawnCheck
@@ -53,10 +54,10 @@ public class MobDespawnCheck
 	{
 		if (entity == null)
 			return false;
-		
+
 		return shouldDespawn(MMComponent.getLimiter().getWorld(entity.getWorld()), entity);
 	}
-	
+
 	/**
 	 * Checks the given mob to see if it should be despawned
 	 * @param world The world the entity resides in (Given for performance, even if its only slight)
@@ -65,23 +66,28 @@ public class MobDespawnCheck
 	 * @return True if the entity should be despawned
 	 */
 	public static boolean shouldDespawn(MMWorld world, LivingEntity entity, boolean findPlayer)
-	{		
+	{
 		if (world == null || entity == null)
 		{
 			if (!LimiterConfig.disableWarnings)
 			{
 				MMComponent.getLimiter().warning("Error when checking whether to despawn a mob");
 				NullPointerException e = new NullPointerException();
-				
+
 				e.printStackTrace();
 			}
 			return false;
 		}
-		
+
 		// Despawn a player? I don't think so..
 		if (entity.getType() == EntityType.PLAYER)
 			return false;
-		
+
+                // Don't despawn Citizen NPCs either....
+                boolean isCitizensNPC = entity.hasMetadata("NPC");
+                if (isCitizensNPC == true)
+                        return false;
+
 		// Make sure the entity is alive and valid
 		if (!entity.isValid())
 			return false;
@@ -89,7 +95,7 @@ public class MobDespawnCheck
 		// Check if the mob has lived long enough
 		if (entity.getTicksLived() <= LimiterConfig.minTicksLivedForDespawn)
 			return false;
-		
+
 		// Check if other plugins will allow the mob to be despawned
 		if (!P.p().getPluginIntegration().canDespawn(entity))
 			return false;
@@ -101,27 +107,27 @@ public class MobDespawnCheck
 		// If MobManager does not recognize the entity ignore it
 		if (mob == null)
 			return false;
-		
+
 		// Check if the mob is being ignored
 		if (LimiterConfig.ignoredMobs.contains(eType))
 			return false;
-		
+
 		// Check if the mob is an animal
 		if (mob == MobType.ANIMAL)
 		{
 			// If animal protection is off then despawning of animals is disabled
 			if (!LimiterConfig.enableAnimalDespawning || MMComponent.getLimiter().animalProtection == null)
 				return false;
-			
+
 			// Check if the animal is tamed
 			if (!LimiterConfig.removeTamedAnimals && entity instanceof Tameable)
 			{
 				Tameable tameable = (Tameable) entity;
-				
+
 				if (tameable.isTamed())
 					return false;
 			}
-			
+
 			// Check if the animal is being protected
 			if (MMComponent.getLimiter().animalProtection.checkUUID(entity.getUniqueId()))
 				return false;
@@ -146,34 +152,34 @@ public class MobDespawnCheck
 		else if (hasEquipment(entity.getType()))
 		{
 			EntityEquipment equipment = entity.getEquipment();
-			
+
 			// If any of these statements pass then the the mob carries an item dropped from a player
-			if (equipment.getItemInHandDropChance() >= 1F
+			if (equipment.getItemInMainHandDropChance() >= 1F
 					|| equipment.getBootsDropChance() >= 1F
 					|| equipment.getChestplateDropChance() >= 1F
 					|| equipment.getHelmetDropChance() >= 1F
 					|| equipment.getLeggingsDropChance() >= 1F)
 				return false;
 		}
-		
+
 		// If we are not looking for a player the mob can be despawned
 		if (!findPlayer)
 			return true;
-		
+
 		// Search for a nearby player
 		return !PlayerFinder.playerNear(world, entity, PlayerFinder.mobFlys(entity));
 	}
-	
+
 	public static boolean shouldDespawn(LivingEntity entity)
 	{
 		return shouldDespawn(entity, true);
 	}
-	
+
 	public static boolean shouldDespawn(MMWorld world, LivingEntity entity)
 	{
 		return shouldDespawn(world, entity, true);
 	}
-	
+
 	private static boolean hasEquipment(EntityType type)
 	{
 		switch (type)

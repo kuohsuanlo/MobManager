@@ -56,30 +56,30 @@ public class MMCommandSaveItem extends MMCommand
 			sender.sendMessage(ChatColor.DARK_RED + "You do not have permission to use /mm saveitem");
 			return;
 		}
-		
+
 		if (!(sender instanceof Player))
 		{
 			sender.sendMessage(ChatColor.DARK_RED + "You can not use this command from console");
 			return;
 		}
-		
+
 		Player player = (Player) sender;
-		
-		ItemStack item = player.getItemInHand();
-		
+
+		ItemStack item = player.getInventory().getItemInMainHand();
+
 		if (item == null || item.getType() == Material.AIR)
 		{
 			sender.sendMessage("You are not holding anything?");
 			return;
 		}
-		
+
 		String key = args.length >= 2 ? args[1] : String.valueOf(System.currentTimeMillis());
-		
+
 		File cfgFile = new File(P.p().getDataFolder(), "items.yml");
 		YamlConfiguration cfg = YamlConfiguration.loadConfiguration(cfgFile);
-		
+
 		cfg.set(key, item.serialize());
-		
+
 		try
 		{
 			cfg.save(cfgFile);

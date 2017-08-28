@@ -29,6 +29,8 @@
 package ninja.mcknight.bukkit.mobmanager.commands;
 
 import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -53,21 +55,22 @@ public class MMCommandMobTypes extends MMCommand
 			sender.sendMessage(ChatColor.DARK_RED + "You do not have permission to use /mm mobtypes");
 			return;
 		}
-		
+
 		boolean subMobTypes = args[0].equalsIgnoreCase("submobtypes");
-		
-		StringBuilder message = new StringBuilder();
-		
+
+                ArrayList<String> messages = new ArrayList<String>();
+		messages.add(ChatColor.GOLD + "------------.:" + ChatColor.DARK_GREEN + "MobManager Valid Entity Types" + ChatColor.GOLD + ":.------------");
+
 		for (ExtendedEntityType type : ExtendedEntityType.values())
 		{
-			if (!subMobTypes && type.hasParent() || subMobTypes && !type.hasParent())
+                        if (!subMobTypes && type.hasParent() || subMobTypes && !type.hasParent())
 				continue;
-			if (message.length() != 0)
-				message.append(", ");
-			message.append(type.getTypeData());
+
+			messages.add(ChatColor.AQUA + type.getTypeData());
 		}
-		
-		sender.sendMessage(ChatColor.GRAY + "~Valid Entity Types: " + message.toString());
+
+                String[] messageArray = messages.toArray(new String[0]);
+                sender.sendMessage(messageArray);
 	}
 
 	@Override

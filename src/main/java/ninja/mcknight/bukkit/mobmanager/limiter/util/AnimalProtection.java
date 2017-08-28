@@ -62,12 +62,12 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 {
 	private File protectedAnimalsFile;
 	private ConcurrentHashMap<UUID,Long> protectedAnimals;
-	
+
 	private int numAttempts = 0;
 	private long cleanupPeriod;
-	
+
 	private AtomicBoolean cleanupRunning = new AtomicBoolean(false);
-	
+
 	@SuppressWarnings("unchecked")
 	public AnimalProtection()
 	{
@@ -86,17 +86,17 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 			{
 				MMComponent.getLimiter().severe("Failed to load current protected animals");
 				protectedAnimals = new ConcurrentHashMap<UUID,Long>(0, 0.75F, 2);
-				
+
 				return;
 			}
-			
+
 			Iterator<Entry<UUID,Long>> it = protectedAnimals.entrySet().iterator();
-			
+
 			// Check the player associated with the animal is still active
 			while (it.hasNext())
 			{
 				Entry<UUID, Long> e = it.next();
-				
+
 				if (!isActive(e.getValue()))
 					it.remove();
 			}
@@ -105,29 +105,29 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 		{
 			protectedAnimals = new ConcurrentHashMap<UUID,Long>(0, 0.75F, 2);
 		}
-		
-		
+
+
 	}
-	
+
 	private boolean isActive(long lastActive)
 	{
 		return (System.currentTimeMillis() - lastActive) <= cleanupPeriod;
 	}
-	
+
 	public boolean checkUUID(UUID uuid)
 	{
 		Long lastActive = protectedAnimals.get(uuid);
-		
+
 		if (lastActive == null)
 			return false;
-		
+
 		if (isActive(lastActive))
 			return true;
-		
+
 		protectedAnimals.remove(uuid);
 		return false;
 	}
-	
+
 	public void addUUID(UUID uuid)
 	{
 		if (cleanupPeriod > 0)
@@ -142,12 +142,12 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 	{
 		if (!cleanupRunning.compareAndSet(false, true))
 			return;
-		
+
 		for (UUID uuid : protectedAnimals.keySet().toArray(new UUID[0]))
 		{
 			removeIfInactive(uuid);
 		}
-		
+
 		try
 		{
 			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(protectedAnimalsFile));
@@ -157,7 +157,7 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 		} catch (IOException e)
 		{
 			MMComponent.getLimiter().severe("Error writing protected animals list to file");
-			
+
 			if (++numAttempts >= 5)
 			{
 				MMComponent.getLimiter().severe("Max attempts to write file exceeded, no more attempts will be made");
@@ -165,14 +165,14 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 			}
 			e.printStackTrace();
 		}
-		
+
 		cleanupRunning.set(false);
 	}
-	
+
 	protected void removeIfInactive(UUID uuid)
 	{
 		Long lastActive = protectedAnimals.get(uuid);
-		
+
 		if (!isActive(lastActive))
 			protectedAnimals.remove(uuid);
 	}
@@ -187,14 +187,15 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 		// Check if the enitiy can breed
 		if (event.getRightClicked() instanceof Animals == false)
 			return;
-		
+
 		Ageable entity = (Ageable) event.getRightClicked();
-		
+
 		if (!entity.canBreed())
 			return;
-		
+
 		// Check if the entity is being bred
-		switch (event.getPlayer().getItemInHand().getType())
+                // TODO: Check for other breeding as well --> update to 1.12
+		switch (event.getPlayer().getInventory().getItemInMainHand().getType())
 		{
 		case SEEDS:
 		case PUMPKIN_SEEDS:
@@ -212,10 +213,10 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 		default:
 			return;
 		}
-		
+
 		MMComponent.getLimiter().animalProtection.addUUID(event.getRightClicked().getUniqueId());
 	}
-	
+
 	/**
 	 * This will add newly bred animals to the list of protected animals</br>
 	 * @param event
@@ -225,15 +226,15 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 	{
 		if (event.getSpawnReason() != SpawnReason.BREEDING && event.getSpawnReason() != SpawnReason.EGG)
 			return;
-		
+
 		if (!(event.getEntity() instanceof Animals))
 			return;
-		
+
 		Animals animal = (Animals) event.getEntity();
-		
+
 		addUUID(animal.getUniqueId());
 	}
-	
+
 	/**
 	 * Attempts to remove the entity from protected animals when it dies
 	 * @param event
@@ -243,7 +244,7 @@ public class AnimalProtection extends BukkitRunnable implements Listener
 	{
 		if (event.getEntity() instanceof Animals == false)
 			return;
-		
+
 		protectedAnimals.remove(event.getEntity().getUniqueId());
 	}
 }

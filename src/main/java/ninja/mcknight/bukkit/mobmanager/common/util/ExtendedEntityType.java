@@ -28,19 +28,16 @@
 
 package ninja.mcknight.bukkit.mobmanager.common.util;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Random;
 
 import ninja.mcknight.bukkit.mobmanager.limiter.util.MobType;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Horse;
-import org.bukkit.entity.Horse.Color;
-import org.bukkit.entity.Horse.Style;
-import org.bukkit.entity.Horse.Variant;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Skeleton;
-import org.bukkit.entity.Skeleton.SkeletonType;
+import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 
 public class ExtendedEntityType
@@ -48,48 +45,67 @@ public class ExtendedEntityType
 	private static int nextId = 0;
 	public static final ExtendedEntityType UNKNOWN;
 	private static LinkedHashMap<String, ExtendedEntityType> entityTypes = new LinkedHashMap<String, ExtendedEntityType>();
-	
+
 	// Adds entities
 	static
 	{
-		// Wither Skeleton
-		new ExtendedEntityType(EntityType.SKELETON, SkeletonType.WITHER);
-		
-		// EntityTypes
+                // EntityTypes
 		for (EntityType eType : EntityType.values())
 		{
-			if (eType.isAlive() && eType != EntityType.PLAYER)
+			if (eType.isAlive() && eType != EntityType.PLAYER && eType != EntityType.ARMOR_STAND)
 				new ExtendedEntityType(eType, "");
 		}
-		
-		ExtendedEntityType horse = ExtendedEntityType.valueOf(EntityType.HORSE);
-		
-		for (Variant v : Variant.values())
-		{
-			if (v == Variant.HORSE)
-			{
-				for (Style s : Style.values()) {
-					if (s == Style.NONE)
-						s = null;
-					for (Color c : Color.values())
-						new ExtendedEntityType(EntityType.HORSE, new Object[] {c, s}, horse);
-				}
-			}
-			else
-			{
-				new ExtendedEntityType(EntityType.HORSE, v);
+
+                // HORSE subtypes by style and color
+                ExtendedEntityType horse = ExtendedEntityType.valueOf(EntityType.HORSE);
+                for (Horse.Style s : Horse.Style.values()) {
+			if (s == Horse.Style.NONE)
+				s = null;
+			for (Horse.Color c : Horse.Color.values()) {
+				new ExtendedEntityType(EntityType.HORSE, new Object[] {c, s}, horse);
 			}
 		}
-		
+
+                // LLAMA subtypes by color
+                ExtendedEntityType llama = ExtendedEntityType.valueOf(EntityType.LLAMA);
+                for (Llama.Color c : Llama.Color.values()) {
+                        new ExtendedEntityType(EntityType.LLAMA, new Object[] {c}, llama);
+                }
+
+                // OCELOT subtypes by cattype
+                ExtendedEntityType ocelot = ExtendedEntityType.valueOf(EntityType.OCELOT);
+                for (Ocelot.Type t : Ocelot.Type.values()) {
+			new ExtendedEntityType(EntityType.OCELOT, new Object[] {t}, ocelot);
+		}
+
+                // PARROT subtypes by variant
+                ExtendedEntityType parrot = ExtendedEntityType.valueOf(EntityType.PARROT);
+                for (Parrot.Variant v : Parrot.Variant.values()) {
+                        new ExtendedEntityType(EntityType.PARROT, new Object[] {v}, parrot);
+                }
+
+                // RABBIT subtypes by rabbittype
+                ExtendedEntityType rabbit = ExtendedEntityType.valueOf(EntityType.RABBIT);
+                for (Rabbit.Type t : Rabbit.Type.values()) {
+			new ExtendedEntityType(EntityType.RABBIT, new Object[] {t}, rabbit);
+		}
+
+                // VILLAGER subtypes by profression
+                ExtendedEntityType villager = ExtendedEntityType.valueOf(EntityType.VILLAGER);
+                for (Villager.Profession p : Villager.Profession.values()) {
+                        if (p != Villager.Profession.NORMAL && p != Villager.Profession.HUSK)
+                                new ExtendedEntityType(EntityType.VILLAGER, new Object[] {p}, villager);
+                }
+
 		// Unknown mobs
 		UNKNOWN = new ExtendedEntityType(EntityType.UNKNOWN, "");
 	}
-	
+
 	public static ExtendedEntityType[] values()
 	{
 		return entityTypes.values().toArray(new ExtendedEntityType[entityTypes.size()]);
 	}
-	
+
 	public static ExtendedEntityType valueOf(int id)
 	{
 		for (ExtendedEntityType type : values())
@@ -97,85 +113,103 @@ public class ExtendedEntityType
 			if (type.id == id)
 				return type;
 		}
-		
+
 		return null;
 	}
-	
+
 	public static ExtendedEntityType valueOf(EntityType entityType)
 	{
 		return valueOf(entityType.toString());
 	}
-	
+
 	public static ExtendedEntityType valueOf(LivingEntity entity)
 	{
 		return valueOf(getEntityTypeData(entity));
 	}
-	
+
 	public static ExtendedEntityType valueOf(String string)
 	{
 		ExtendedEntityType type = entityTypes.get(string.toUpperCase());
-		
+
 		return type != null ? type : UNKNOWN;
 	}
-	
+
 	public static String getEntityTypeData(LivingEntity entity)
 	{
 		String entityData = getEntityData(entity);
-		
+
 		if (entityData.length() != 0)
 			return String.format("%s%s%s", entity.getType().toString(), getDataSeperator(), entityData);
 		return entity.getType().toString();
 	}
-	
+
 	public static String getEntityData(LivingEntity entity)
 	{
-		// Handle the case for wither skeletons
-		if (entity.getType() == EntityType.SKELETON && ((Skeleton) entity).getSkeletonType() != SkeletonType.NORMAL)
-			return ((Skeleton) entity).getSkeletonType().toString();
-		
-		// Handle the case for horses
-		if (entity.getType() == EntityType.HORSE)
-		{
+                // Handle the case for horses
+		if (entity.getType() == EntityType.HORSE) {
 			Horse horse = (Horse) entity;
-			if (horse.getVariant() == Variant.HORSE)
-				return horse.getStyle() + getDataSeperator() + horse.getColor();
-			return horse.getVariant().toString();
+			return horse.getStyle() + getDataSeperator() + horse.getColor();
 		}
-		
+
+                if (entity.getType() == EntityType.LLAMA) {
+                        Llama llama = (Llama) entity;
+                        return llama.getColor().toString();
+                }
+
+                if (entity.getType() == EntityType.OCELOT) {
+                        Ocelot ocelot = (Ocelot) entity;
+                        return ocelot.getCatType().toString();
+                }
+
+                if (entity.getType() == EntityType.PARROT) {
+                        Parrot parrot = (Parrot) entity;
+                        return parrot.getVariant().toString();
+                }
+
+                if (entity.getType() == EntityType.RABBIT) {
+                        Rabbit rabbit = (Rabbit) entity;
+                        return rabbit.getRabbitType().toString();
+                }
+
+                if (entity.getType() == EntityType.VILLAGER) {
+                        Villager villager = (Villager) entity;
+                        return villager.getProfession().toString();
+                }
+
 		return "";
 	}
-	
+
 	private final int id;
 	private final EntityType eType;
 	private final Object eData;
 	private final MobType mobType;
 	private final ExtendedEntityType parent;
-	
+
 	private ExtendedEntityType(EntityType eType, Object eData)
 	{
 		this(eType, eData, null);
 	}
-	
+
 	private ExtendedEntityType(EntityType eType, Object eData, ExtendedEntityType parent)
 	{
 		id = nextId++;
 		this.eType = eType;
 		this.eData = eData;
 		this.parent = parent;
-		
+
 		if (eType != null && eType.getEntityClass() != null)
 			mobType = MobType.valueOf(eType);
 		else
 			mobType = null;
-		
+
 		entityTypes.put(getTypeData().toUpperCase(), this);
 	}
-	
+
 	public EntityType getBukkitEntityType()
 	{
 		return eType;
 	}
-	
+
 	/**
 	 * Returns the pre-calculated mob type for this EntityType
 	 * @return The EntityTypes MobType
@@ -184,7 +218,7 @@ public class ExtendedEntityType
 	{
 		return mobType;
 	}
-	
+
 	/**
 	 * Returns the MobType of this entity</br>
 	 * If the MobType is unknown it is calculated given an Entity</br>
@@ -198,17 +232,17 @@ public class ExtendedEntityType
 			return MobType.valueOf(entity);
 		return mobType;
 	}
-	
+
 	public ExtendedEntityType getParent()
 	{
 		return parent;
 	}
-	
+
 	public boolean hasParent()
 	{
 		return parent != null;
 	}
-	
+
 	public String getData()
 	{
 		if (eData instanceof Object[])
@@ -219,7 +253,7 @@ public class ExtendedEntityType
 			{
 				if (a[i] == null)
 					continue;
-				
+
 				if (i > 0)
 					data += getDataSeperator();
 				data += a[i];
@@ -228,49 +262,49 @@ public class ExtendedEntityType
 		}
 		return eData.toString();
 	}
-	
+
 	public static String getDataSeperator()
 	{
 		return "_";
 	}
-	
+
 	public String getTypeData()
 	{
 		String typeData = eType.toString();
 		String dataString = getData();
-		
+
 		if (dataString.length() != 0)
 			typeData += getDataSeperator() + dataString;
-		
+
 		return typeData;
 	}
-	
+
 	public static String getExtendedEntityList(boolean subtypes)
 	{
 		final int charLimit = 68;
 		int currentLoc = 1;
-		
+
 		StringBuilder list = new StringBuilder();
-		
+
 		for (ExtendedEntityType type : entityTypes.values())
 		{
 			if (subtypes && !type.hasParent() || !subtypes && type.hasParent())
 				continue;
-			
+
 			String addition = type.getTypeData();
-			
+
 			if (currentLoc + addition.length() + 2 > charLimit)
 			{
 				currentLoc = 1;
 				list.append(",\n");
 			}
-			
+
 			if (currentLoc != 1)
 				list.append(", ");
 			list.append(addition);
 			currentLoc += addition.length();
 		}
-		
+
 		return list.toString();
 	}
 
@@ -279,69 +313,127 @@ public class ExtendedEntityType
 	{
 		return getTypeData();
 	}
-	
+
 	public LivingEntity spawnMob(Location loc)
 	{
-		if (eType.getEntityClass() == null || loc == null || loc.getWorld() == null)
+                // Bukkit.getServer().getLogger().info("MM spawnmob: START eType ==" + eType);
+                if (eType.getEntityClass() == null || loc == null || loc.getWorld() == null)
 			return null;
-		
+
 		LivingEntity entity = (LivingEntity) loc.getWorld().spawnEntity(loc, eType);
-		
+
 		if (entity == null)
 			return null;
-		
-		if (eType == EntityType.HORSE)
+
+                Horse.Style hs = null;
+		Horse.Color hc = null;
+		Llama.Color lc = null;
+                Ocelot.Type ot = null;
+                Parrot.Variant pv = null;
+                Rabbit.Type rt = null;
+                Villager.Profession vp = null;
+
+                //extract extra data in general...
+                if (eData instanceof Object[]) {
+                        Object[] arrObjData = (Object[]) eData;
+                        for (Object o: arrObjData){
+                                if (o == null)
+                                        continue;
+                                if (o instanceof Horse.Style)
+                                        hs = (Horse.Style) o;
+                                if (o instanceof Horse.Color)
+                                        hc = (Horse.Color) o;
+                                if (o instanceof Llama.Color)
+                                        lc = (Llama.Color) o;
+                                if (o instanceof Ocelot.Type)
+                                        ot = (Ocelot.Type) o;
+                                if (o instanceof Parrot.Variant)
+                                        pv = (Parrot.Variant) o;
+                                if (o instanceof Rabbit.Type)
+                                        rt = (Rabbit.Type) o;
+                                if (o instanceof Villager.Profession)
+                                        vp = (Villager.Profession) o;
+                        }
+                }
+
+                if (eType == EntityType.HORSE)
 		{
 			Horse horse = (Horse) entity;
-			Variant v = Variant.HORSE;
-			Style s = null;
-			Color c = null;
-			if (eData.toString().length() == 0)
-			{
-				s = RandomUtil.getRandomElement(Style.values());
-				c = RandomUtil.getRandomElement(Color.values());
-			}
-			else if (eData instanceof Object[])
-			{
-				Object[] dataArr = (Object[]) eData;
-				if (dataArr[1] != null)
-					horse.setStyle((Style) dataArr[1]);
-				horse.setColor((Color) dataArr[0]);
-			}
-			else
-			{
-				v = (Variant) eData;
-			}
-			
-			horse.setVariant(v);
-			
-			if (v == Variant.HORSE)
-			{
-				if (s != null) horse.setStyle(s);
-				if (c != null) horse.setColor(c);
-			}
-			
+                        if (hs == null)
+				hs = RandomUtil.getRandomElement( Horse.Style.values());
+                        if (hc == null)
+				hc = RandomUtil.getRandomElement( Horse.Color.values());
+
+			horse.setStyle( hs);
+			horse.setColor( hc);
 			return horse;
 		}
-		
-		if (eData != null)
+
+                if (eType == EntityType.LLAMA)
 		{
-			if (eData == SkeletonType.WITHER)
-				((Skeleton) entity).setSkeletonType(SkeletonType.WITHER);
+			Llama llama = (Llama) entity;
+                        if (lc == null)
+				lc = RandomUtil.getRandomElement( Llama.Color.values());
+			llama.setColor( lc);
+			return llama;
 		}
-		
+
+                if (eType == EntityType.OCELOT)
+		{
+			Ocelot ocelot = (Ocelot) entity;
+                        if (ot == null)
+				ot = RandomUtil.getRandomElement( Ocelot.Type.values());
+			ocelot.setCatType( ot);
+			return ocelot;
+		}
+
+                if (eType == EntityType.PARROT)
+                {
+                        Parrot parrot = (Parrot) entity;
+                        if (pv == null)
+                                pv = RandomUtil.getRandomElement( Parrot.Variant.values());
+                        parrot.setVariant( pv);
+                        return parrot;
+                }
+
+                if (eType == EntityType.RABBIT)
+                {
+                        Rabbit rabbit = (Rabbit) entity;
+                        if (rt == null)
+                                rt = RandomUtil.getRandomElement( Rabbit.Type.values());
+                        rabbit.setRabbitType( rt);
+                        return rabbit;
+                }
+
+                ArrayList<Villager.Profession> professions = new ArrayList<Villager.Profession>();
+                for (Villager.Profession p : Villager.Profession.values()) {
+                        if (p != Villager.Profession.NORMAL && p != Villager.Profession.HUSK)
+                                professions.add( p);
+                }
+                Random i = new Random();
+                if (eType == EntityType.VILLAGER)
+                {
+                        Villager villager = (Villager) entity;
+                        if (vp == null)
+                                vp = professions.get(i.nextInt( professions.size()));
+                        villager.setProfession( vp);
+                        return villager;
+                }
+
 		switch (eType)
 		{
 		case SKELETON:
-			Material heldItem = eData == null || eData != SkeletonType.WITHER ? Material.BOW : Material.STONE_SWORD;
-			entity.getEquipment().setItemInHand(new ItemStack(heldItem));
+			entity.getEquipment().setItemInMainHand( new ItemStack( Material.BOW));
+			break;
+                case WITHER_SKELETON:
+			entity.getEquipment().setItemInMainHand( new ItemStack( Material.STONE_SWORD));
 			break;
 		case PIG_ZOMBIE:
-			entity.getEquipment().setItemInHand(new ItemStack(Material.GOLD_SWORD));
+			entity.getEquipment().setItemInMainHand( new ItemStack( Material.GOLD_SWORD));
 			break;
 		default:
 		}
-		
+
 		return entity;
 	}
 

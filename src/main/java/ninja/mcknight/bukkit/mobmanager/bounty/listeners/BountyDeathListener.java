@@ -55,7 +55,7 @@ import ninja.mcknight.bukkit.mobmanager.common.util.ExtendedEntityType;
 public class BountyDeathListener implements Listener
 {
 	private final static Pattern underscore = Pattern.compile("_", Pattern.LITERAL);
-	
+
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onEntityDeath(EntityDeathEvent event)
 	{
@@ -63,9 +63,9 @@ public class BountyDeathListener implements Listener
 		{
 			return;
 		}
-		
+
 		EntityDamageByEntityEvent damage = (EntityDamageByEntityEvent) event.getEntity().getLastDamageCause();
-		
+
 		// Make sure the entity is a living entity
 		if (damage.getEntity() instanceof LivingEntity == false)
 		{
@@ -75,7 +75,7 @@ public class BountyDeathListener implements Listener
 
 		// Fetch the Bounty config
 		BountyConfig cfg = MMComponent.getBounties().getConfig();
-		
+
 		// Fetch the config for the world the entity is in
 		BountyWorldConfig worldCfg = cfg.getWorldConfig(entity.getWorld());
 		// If no config was found Bounties is disabled here
@@ -83,22 +83,22 @@ public class BountyDeathListener implements Listener
 		{
 			return;
 		}
-		
+
 		ExtendedEntityType entityType = ExtendedEntityType.valueOf(entity);
-		
+
 		// If the reward is 0.0 we ignore the death
 		double reward;
 		if ((reward = worldCfg.getReward(entityType)) == 0.0)
 		{
 			return;
 		}
-		
+
 		// Dropping a negative amount of items makes no sense
 		if (cfg.bountyType == BountyType.ITEM && reward < 0.0)
 		{
 			return;
 		}
-	
+
 		// Fetch the player which killed the mob
 		Player player = getDamager(damage.getDamager(), worldCfg.allowPetKills);
 		// If there is no player, what are we doing???
@@ -106,10 +106,10 @@ public class BountyDeathListener implements Listener
 		{
 			return;
 		}
-		
+
 		// Apply appropriate multipliers to the reward
 		reward = cfg.applyMultipliers(reward, player, entity, entityType);
-		
+
 		// If the reward is 0.0 we ignore the death
 		// It could have been reduced to 0.0 after lots of small multipliers
 		if (reward == 0.0)
@@ -130,7 +130,7 @@ public class BountyDeathListener implements Listener
 			mobName = entityType.toString().charAt(0) + entityType.toString().substring(1).toLowerCase();
 			mobName = underscore.matcher(mobName).replaceAll(" ");
 		}
-		
+
 		Object objReward = null;
 		switch (cfg.bountyType)
 		{
@@ -147,7 +147,7 @@ public class BountyDeathListener implements Listener
 			objReward = Math.abs(reward);
 			break;
 		}
-		
+
 		if (objReward != null)
 		{
 			if (reward > 0.0)
@@ -162,7 +162,7 @@ public class BountyDeathListener implements Listener
 			}
 		}
 	}
-	
+
 	public Player getDamager(Entity damager, boolean allowPets)
 	{
 		// Check if the damager is a player
@@ -174,7 +174,7 @@ public class BountyDeathListener implements Listener
 		else if (damager instanceof Projectile)
 		{
 			Projectile projectile = (Projectile) damager;
-			
+
 			if (projectile.getShooter() instanceof Player)
 			{
 				return (Player) projectile.getShooter();
@@ -184,7 +184,7 @@ public class BountyDeathListener implements Listener
 		else if (allowPets && damager instanceof Tameable)
 		{
 			Tameable pet = (Tameable) damager;
-			
+
 			if (pet.isTamed() && pet.getOwner() instanceof Player)
 			{
 				Player player = (Player) pet.getOwner();
@@ -195,61 +195,61 @@ public class BountyDeathListener implements Listener
 				}
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 	public void handleMoney(BountyConfig cfg, Player player, double reward)
 	{
 		Economy econ = MMComponent.getBounties().getEconomy();
-		
+
 		if (econ == null)
 			return;
-		
+
 		if (reward == 0.0)
 		{
 			return;
 		}
 		else if (reward > 0)
 		{
-			econ.depositPlayer(player.getName(), reward);
+			econ.depositPlayer(player, reward);
 		}
 		else
 		{
 			reward = Math.abs(reward);
-			double balance = econ.getBalance(player.getName());
+			double balance = econ.getBalance(player);
 			if (balance - reward < 0)
 			{
 				reward = balance;
 			}
-			
-			econ.withdrawPlayer(player.getName(), reward);
+
+			econ.withdrawPlayer(player, reward);
 		}
 	}
-	
+
 	public int handleItemDrop(List<ItemStack> drops, Material material, double reward)
 	{
 		int count = (int) reward;
 		reward -= count;
-		
+
 		if (Math.random() <= reward)
 		{
 			++count;
 		}
-		
+
 		int amount = count;
-		
+
 		while (count > 0)
 		{
 			ItemStack item = new ItemStack(material);
-			
+
 			boolean flag = material.getMaxStackSize() >= count;
 			item.setAmount(flag ? count : material.getMaxStackSize());
-			
+
 			// Add the item to the drops
 			System.out.print("Count: " + item.getAmount());
 			drops.add(item);
-			
+
 			if (flag)
 			{
 				break;
@@ -259,24 +259,24 @@ public class BountyDeathListener implements Listener
 				count -= material.getMaxStackSize();
 			}
 		}
-		
+
 		return amount;
 	}
-	
+
 	public int handleExp(Player player, double reward)
 	{
 		boolean give = reward > 0.0;
 		reward = Math.abs(reward);
-		
+
 		int exp = (int) reward;
-		
+
 		if (Math.random() <= reward - exp)
 		{
 			++exp;
 		}
-		
+
 		player.giveExp(give ? exp : -exp);
-		
+
 		return exp;
 	}
 }

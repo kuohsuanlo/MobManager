@@ -20,7 +20,11 @@ apply plugin: 'jacoco'
 // #######################
 // #### Default Tasks ####
 // #######################
-defaultTasks 'clean', 'build', 'shadowJar', 'test', 'uploadArchives', 'jacocoTestReport'
+defaultTasks 'clean', 'build', 'test', 'uploadArchives', 'jacocoTestReport'
+
+tasks.withType(JavaCompile) { 
+    options.compilerArgs << "-Xlint:deprecation" 
+} 
 
 // #########################
 // #### Variable Setup #####
@@ -70,7 +74,10 @@ processResources {
 // #### Archiving ####
 // ###################
 artifacts {
-    archives file('build/distributions/' + name + '-' + version + '.jar')
+    println 'build/distributions/' + name + '-' + version + '.jar'
+    println localMavenRepoLoc
+//    archives file('build/distributions/' + name + '-' + version + '.jar')
+    archives file('build/libs/' + name + '-' + version + '.jar')
 }
 
 uploadArchives {
@@ -88,7 +95,7 @@ jacocoTestReport {
     reports {
         xml.enabled false
         csv.enabled false
-        html.destination "${buildDir}/jacocoHtml"
+        html.destination file("${buildDir}/jacocoHtml")
     }
 }
 jacocoTestReport.onlyIf { !project.hasProperty('teamcity') }
@@ -104,7 +111,7 @@ test {
 // #### Gradle wrapper ####
 // ########################
 task wrapper(type: Wrapper) {
-    gradleVersion = 2.5
+    gradleVersion = 4.1
 }
 
 // #######################
@@ -118,15 +125,17 @@ repositories {
     }
     // Vault Repo
     maven {
-        url "http://nexus.theyeticave.net/content/repositories/pub_releases/"
+//        url "http://nexus.theyeticave.net/content/repositories/pub_releases/"
+//        url "http://repo.ess3.net/content/repositories/theyeticave/"
+        url "http://nexus.hc.to/content/repositories/pub_releases/"
     }
 }
 
 dependencies {
     //compile 'org.spigotmc:spigot-api:1.8.7-R0.1-SNAPSHOT'
-    compile 'org.bukkit:bukkit:1.8.7-R0.1-SNAPSHOT'
+    compile 'org.bukkit:bukkit:1.12-R0.1-SNAPSHOT'
 
-    compile group: 'net.milkbowl.vault', name: 'Vault', version: '1.4.1'
+    compile group: 'net.milkbowl.vault', name: 'VaultAPI', version: '1.6'
     
     //compile group: 'org.projectlombok', name: 'lombok', version: '1.14.2'
     

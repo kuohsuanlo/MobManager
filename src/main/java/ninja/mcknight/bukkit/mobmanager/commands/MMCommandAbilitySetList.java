@@ -28,8 +28,10 @@
 
 package ninja.mcknight.bukkit.mobmanager.commands;
 
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -53,25 +55,27 @@ public class MMCommandAbilitySetList extends MMCommand
 			sender.sendMessage(ChatColor.DARK_RED + "You do not have permission to use /mm mobtypes");
 			return;
 		}
-		
-		String message = "";
-		
+
+                ArrayList<String> messages = new ArrayList<String>();
+		messages.add(ChatColor.GOLD + "------------.:" + ChatColor.DARK_GREEN + "MobManager AbilitySets"  + ChatColor.GOLD + ":.------------");
+
 		for (String name : AbilitySet.getAbilitySetNames())
 		{
-			AbilitySet set = AbilitySet.getAbilitySet(name);
-			
 			if (name == null)
 				continue;
-			
-			if (set.getAbilitySetsEntityType() == null)
+
+                        if (name.equalsIgnoreCase("none"))
+                        	continue;
+
+                        AbilitySet set = AbilitySet.getAbilitySet(name);
+                        if (set.getAbilitySetsEntityType() == null)
 				continue;
-			
-			if (message.length() != 0)
-				message += ", ";
-			message += name + ":" + set.getAbilitySetsEntityType();
+
+			messages.add(ChatColor.AQUA + name + ": " + ChatColor.YELLOW + set.getAbilitySetsEntityType());
 		}
-		
-		sender.sendMessage(ChatColor.GRAY + "~AbilitySets: " + message);
+
+                String[] messageArray = messages.toArray(new String[0]);
+		sender.sendMessage( messageArray);
 	}
 
 	@Override
